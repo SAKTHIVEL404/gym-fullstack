@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   const validateToken = useCallback(
     async () => {
       try {
-        const token = localStorage.getItem('token');
+        let token = localStorage.getItem('token');
         if (!token) {
           console.log('No token in storage');
           return false;
@@ -229,7 +229,41 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   }, [navigate]);
 
-  const value = { user, isAuthenticated, loading, login, logout, refreshToken, validateToken };
+  const register = useCallback(async (userData) => {
+    try {
+      console.log('Sending registration request with data:', userData);
+      const response = await authAPI.register(userData);
+      console.log('Registration response:', response);
+      
+      if (response.data.success) {
+        return { 
+          success: true,
+          message: response.data.data || 'Registration successful! Please log in.'
+        };
+      }
+      
+      throw new Error(response.data.error || 'Registration failed');
+      
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         'Registration failed. Please check your details and try again.';
+      
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  const value = { 
+    user, 
+    isAuthenticated, 
+    loading, 
+    login, 
+    logout, 
+    register, 
+    refreshToken, 
+    validateToken 
+  };
 
   return (
     <AuthContext.Provider value={value}>

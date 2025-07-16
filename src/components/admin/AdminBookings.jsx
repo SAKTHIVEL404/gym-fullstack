@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { bookingsAPI } from '../../services/api';
-import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Container, Row, Col, Table, Spinner, Form, Button, Badge } from 'react-bootstrap';
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -15,8 +16,7 @@ const AdminBookings = () => {
   const fetchBookings = async () => {
     try {
       const response = await bookingsAPI.getAll();
-      const apiResp = response.data;
-      setBookings(apiResp.data || []);
+      setBookings(response.data?.data || []);
     } catch (error) {
       toast.error('Failed to fetch bookings');
     } finally {
@@ -27,209 +27,130 @@ const AdminBookings = () => {
   const updateBookingStatus = async (bookingId, status) => {
     try {
       await bookingsAPI.updateStatus(bookingId, status);
-      toast.success('Booking status updated successfully');
+      toast.success('Booking status updated');
       fetchBookings();
     } catch (error) {
-      toast.error('Failed to update booking status');
+      toast.error('Failed to update booking');
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusVariant = (status) => {
     switch (status) {
-      case 'CONFIRMED':
-        return { bg: 'bg-coquelicot-10', text: 'text-coquelicot' };
-      case 'COMPLETED':
-        return { bg: 'bg-[#e8f5e8]', text: 'text-[#155724]' };
-      case 'CANCELLED':
-        return { bg: 'bg-[#f8d7da]', text: 'text-[#721c24]' };
-      case 'PENDING':
-        return { bg: 'bg-[#fff3cd]', text: 'text-[#856404]' };
-      default:
-        return { bg: 'bg-gainsboro', text: 'text-sonic-silver' };
+      case 'CONFIRMED': return 'warning';
+      case 'COMPLETED': return 'success';
+      case 'CANCELLED': return 'danger';
+      case 'PENDING': return 'secondary';
+      default: return 'light';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'CONFIRMED':
-        return <CheckCircle size={16} />;
-      case 'COMPLETED':
-        return <CheckCircle size={16} />;
-      case 'CANCELLED':
-        return <XCircle size={16} />;
+      case 'COMPLETED': return <CheckCircle size={16} />;
+      case 'CANCELLED': return <XCircle size={16} />;
       case 'PENDING':
-        return <AlertCircle size={16} />;
-      default:
-        return <AlertCircle size={16} />;
+      default: return <AlertCircle size={16} />;
     }
   };
 
-  const bookingsArray = Array.isArray(bookings) ? bookings : [];
-
   const filteredBookings = statusFilter
-    ? bookingsArray.filter(booking => booking.status === statusFilter)
-    : bookingsArray;
+    ? bookings.filter(b => b.status === statusFilter)
+    : bookings;
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-coquelicot"></div>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '80vh' }}>
+        <Spinner animation="border" variant="danger" />
       </div>
     );
   }
 
   return (
-    <section className="py-[80px] px-4 bg-white font-rubik text-[1.6rem] text-sonic-silver leading-[1.6]">
-      <div className="max-w-[1140px] mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-[30px]">
-          <h2 className="font-catamaran text-[2.5rem] md:text-[4.5rem] font-extrabold text-rich-black-fogra-29-1 leading-[1.2]">
-            Bookings Management
-          </h2>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-gainsboro border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver max-w-[200px] focus:outline-none focus:border-coquelicot"
-          >
+    <Container className="py-5">
+      <Row className="mb-4 align-items-center justify-content-between">
+        <Col><h2 className="fw-bold">Bookings Management</h2></Col>
+        <Col md="3">
+          <Form.Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="">All Status</option>
             <option value="PENDING">Pending</option>
             <option value="CONFIRMED">Confirmed</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
+          </Form.Select>
+        </Col>
+      </Row>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-[30px]">
-          {['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].map(status => {
-            const count = bookingsArray.filter(b => b.status === status).length;
-            const statusStyle = getStatusColor(status);
-
-            return (
-              <div
-                key={status}
-                className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="p-6 text-center bg-gainsboro rounded-b-[10px]">
-                  <div className={`${statusStyle.bg} ${statusStyle.text} p-3 rounded-full w-[60px] h-[60px] flex items-center justify-center mx-auto mb-4`}>
-                    {getStatusIcon(status)}
-                  </div>
-                  <h3 className="font-catamaran text-[2rem] font-bold text-rich-black-fogra-29-1 mb-2">
-                    {count}
-                  </h3>
-                  <p className="font-rubik text-[1.3rem] text-sonic-silver capitalize">
-                    {status.toLowerCase()}
-                  </p>
-                </div>
+      <Row className="mb-4">
+        {['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].map(status => (
+          <Col key={status} md={3} className="mb-3">
+            <div className="p-3 border rounded shadow-sm text-center">
+              <div className="mb-2">
+                <Badge bg={getStatusVariant(status)} className="p-2">
+                  {getStatusIcon(status)}
+                </Badge>
               </div>
-            );
-          })}
-        </div>
+              <h4>{bookings.filter(b => b.status === status).length}</h4>
+              <small className="text-muted text-capitalize">{status.toLowerCase()}</small>
+            </div>
+          </Col>
+        ))}
+      </Row>
 
-        {/* Bookings List */}
-        <div className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300">
-          <div className="p-6 bg-gainsboro rounded-b-[10px]">
-            {filteredBookings.length === 0 ? (
-              <div className="text-center py-[40px]">
-                <p className="font-rubik text-[1.5rem] text-sonic-silver">No bookings found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-[1.4rem] border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-light-gray">
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">User</th>
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Session</th>
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Date & Time</th>
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Amount</th>
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Status</th>
-                      <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBookings.map((booking) => {
-                      const statusStyle = getStatusColor(booking.status);
-
-                      return (
-                        <tr key={booking.id} className="border-b border-light-gray hover:bg-coquelicot-10">
-                          <td className="p-4">
-                            <div>
-                              <div className="font-catamaran font-medium text-rich-black-fogra-29-1">
-                                {booking.user?.name}
-                              </div>
-                              <div className="font-rubik text-[1.2rem] text-sonic-silver">
-                                {booking.user?.email}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div>
-                              <div className="font-catamaran font-medium text-rich-black-fogra-29-1">
-                                {booking.session?.title}
-                              </div>
-                              <div className="font-rubik text-[1.2rem] text-sonic-silver">
-                                {booking.session?.instructorName}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Calendar size={14} className="text-coquelicot" />
-                              <span>{new Date(booking.session?.scheduledDate).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock size={14} className="text-coquelicot" />
-                              <span>{new Date(booking.session?.scheduledDate).toLocaleTimeString()}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 font-catamaran font-medium text-coquelicot">
-                            ₹{booking.amount}
-                          </td>
-                          <td className="p-4">
-                            <div className={`${statusStyle.bg} ${statusStyle.text} px-3 py-1 rounded-[5px] font-rubik text-[1.2rem] font-medium flex items-center gap-2`}>
-                              {getStatusIcon(booking.status)}
-                              {booking.status}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              {booking.status === 'PENDING' && (
-                                <>
-                                  <button
-                                    onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')}
-                                    className="bg-coquelicot text-white px-3 py-1 rounded-[5px] font-rubik text-[1.2rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                                  >
-                                    Confirm
-                                  </button>
-                                  <button
-                                    onClick={() => updateBookingStatus(booking.id, 'CANCELLED')}
-                                    className="bg-[#dc3545] text-white px-3 py-1 rounded-[5px] font-rubik text-[1.2rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              )}
-                              {booking.status === 'CONFIRMED' && (
-                                <button
-                                  onClick={() => updateBookingStatus(booking.id, 'COMPLETED')}
-                                  className="bg-[#28a745] text-white px-3 py-1 rounded-[5px] font-rubik text-[1.2rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                                >
-                                  Mark Complete
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
+      <Table responsive bordered hover>
+        <thead className="table-light">
+          <tr>
+            <th>User</th>
+            <th>Session</th>
+            <th>Date & Time</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredBookings.length === 0 ? (
+            <tr><td colSpan="6" className="text-center">No bookings found</td></tr>
+          ) : (
+            filteredBookings.map(booking => (
+              <tr key={booking.id}>
+                <td>
+                  <strong>{booking.user?.name}</strong><br />
+                  <small>{booking.user?.email}</small>
+                </td>
+                <td>
+                  <strong>{booking.session?.title}</strong><br />
+                  <small>{booking.session?.instructorName}</small>
+                </td>
+                <td>
+                  <Calendar size={14} className="me-1 text-danger" />
+                  {new Date(booking.session?.scheduledDate).toLocaleDateString()}<br />
+                  <Clock size={14} className="me-1 text-danger" />
+                  {new Date(booking.session?.scheduledDate).toLocaleTimeString()}
+                </td>
+                <td className="text-danger fw-bold">₹{booking.amount}</td>
+                <td>
+                  <Badge bg={getStatusVariant(booking.status)}>
+                    {getStatusIcon(booking.status)} {booking.status}
+                  </Badge>
+                </td>
+                <td>
+                  {booking.status === 'PENDING' && (
+                    <>
+                      <Button variant="warning" size="sm" className="me-2" onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')}>Confirm</Button>
+                      <Button variant="danger" size="sm" onClick={() => updateBookingStatus(booking.id, 'CANCELLED')}>Cancel</Button>
+                    </>
+                  )}
+                  {booking.status === 'CONFIRMED' && (
+                    <Button variant="success" size="sm" onClick={() => updateBookingStatus(booking.id, 'COMPLETED')}>Complete</Button>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </Container>
   );
 };
 

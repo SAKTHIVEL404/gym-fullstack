@@ -1,17 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Container, Row, Col, Nav, Button, Offcanvas } from 'react-bootstrap';
 import { Package, Users, Calendar, BarChart3, Settings, Menu } from 'lucide-react';
+
 import AdminProducts from '../components/admin/AdminProducts';
 import AdminSessions from '../components/admin/AdminSessions';
 import AdminBookings from '../components/admin/AdminBookings';
 import AdminUsers from '../components/admin/AdminUsers';
+
+const AdminSettings = () => (
+  <section className="py-4">
+    <Container>
+      <h2 className="mb-4 fw-bold display-5 text-dark">Settings</h2>
+      <div className="bg-light border rounded shadow-sm p-4">
+        <p className="text-muted">Settings panel coming soon...</p>
+      </div>
+    </Container>
+  </section>
+);
 
 const AdminDashboard = () => {
   const location = useLocation();
   const currentPath = location.pathname.split('/').pop();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Apply body class for admin theme (optional, can be removed if not needed)
   useEffect(() => {
     document.body.classList.add('admin-blue');
     return () => document.body.classList.remove('admin-blue');
@@ -26,75 +38,82 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="pt-[70px] flex min-h-screen bg-white font-rubik text-[1.6rem] text-sonic-silver">
-      {/* Hamburger for mobile */}
-      <button
-        className="lg:hidden fixed top-[80px] left-4 z-[1001] text-coquelicot hover:text-rich-black-fogra-29-1 transition-colors duration-300"
+    <div style={{ paddingTop: '70px', minHeight: '100vh', backgroundColor: '#fff' }}>
+      {/* Hamburger (for mobile) */}
+      <Button
+        variant="link"
         onClick={() => setSidebarOpen(true)}
+        className="position-fixed top-0 mt-3 ms-3 d-lg-none z-3 text-danger"
       >
         <Menu size={24} />
-      </button>
+      </Button>
 
-      {/* Sidebar */}
-      <div className={`fixed top-[70px] left-0 h-full w-[250px] bg-rich-black-fogra-29-1 text-white transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:transform-none lg:static lg:bg-gainsboro lg:border-r lg:border-coquelicot-20 z-[1000]`}>
-        <h3 className="font-catamaran text-[2.5rem] font-extrabold text-white lg:text-rich-black-fogra-29-1 mb-8 px-6 pt-6">
-          Admin Panel
-        </h3>
-        <nav>
-          <ul className="flex flex-col gap-2 px-4">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPath === item.id ||
-                              (currentPath === 'admin' && item.id === 'products');
+      {/* Sidebar for large screens */}
+      <div
+        className="d-none d-lg-block position-fixed top-0 start-0 h-100 bg-dark text-white pt-5"
+        style={{ width: '250px', paddingTop: '80px' }}
+      >
+        <div className="px-4 mb-4">
+          <h4 className="fw-bold text-white">Admin Panel</h4>
+        </div>
+        <Nav className="flex-column px-3">
+          {sidebarItems.map(({ id, label, icon: Icon, path }) => {
+            const isActive = currentPath === id || (currentPath === 'admin' && id === 'products');
+            return (
+              <Nav.Link
+                as={Link}
+                to={path}
+                key={id}
+                className={`d-flex align-items-center gap-2 mb-2 rounded px-3 py-2 ${isActive ? 'bg-danger text-white' : 'text-light'}`}
+              >
+                <Icon size={18} />
+                {label}
+              </Nav.Link>
+            );
+          })}
+        </Nav>
+      </div>
 
+      {/* Sidebar for small screens */}
+      <Offcanvas show={sidebarOpen} onHide={() => setSidebarOpen(false)} responsive="lg">
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>Admin Panel</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <Nav className="flex-column">
+            {sidebarItems.map(({ id, label, icon: Icon, path }) => {
+              const isActive = currentPath === id || (currentPath === 'admin' && id === 'products');
               return (
-                <li key={item.id}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] transition-colors duration-300 ${isActive ? 'bg-coquelicot text-white lg:bg-coquelicot-10 lg:text-coquelicot' : 'text-white lg:text-sonic-silver hover:bg-coquelicot-10 hover:text-coquelicot'}`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <Icon size={18} />
-                    {item.label}
-                  </Link>
-                </li>
+                <Nav.Link
+                  as={Link}
+                  to={path}
+                  key={id}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`d-flex align-items-center gap-2 mb-2 rounded px-3 py-2 ${isActive ? 'bg-danger text-white' : 'text-dark'}`}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Nav.Link>
               );
             })}
-          </ul>
-        </nav>
-      </div>
+          </Nav>
+        </Offcanvas.Body>
+      </Offcanvas>
 
       {/* Main Content */}
-      <div className="flex-1 px-4 lg:pl-8 py-8 max-w-[1140px] mx-auto w-full" onClick={() => sidebarOpen && setSidebarOpen(false)}>
-        <Routes>
-          <Route path="/" element={<AdminProducts />} />
-          <Route path="/products" element={<AdminProducts />} />
-          <Route path="/sessions" element={<AdminSessions />} />
-          <Route path="/bookings" element={<AdminBookings />} />
-          <Route path="/users" element={<AdminUsers />} />
-          <Route path="/settings" element={<AdminSettings />} />
-        </Routes>
+      <div className="ms-lg-auto" style={{ marginLeft: '250px', maxWidth: 'calc(100% - 250px)' }}>
+        <Container fluid className="pt-4 px-3">
+          <Routes>
+            <Route path="/" element={<AdminProducts />} />
+            <Route path="/products" element={<AdminProducts />} />
+            <Route path="/sessions" element={<AdminSessions />} />
+            <Route path="/bookings" element={<AdminBookings />} />
+            <Route path="/users" element={<AdminUsers />} />
+            <Route path="/settings" element={<AdminSettings />} />
+          </Routes>
+        </Container>
       </div>
     </div>
-  );
-};
-
-const AdminSettings = () => {
-  return (
-    <section className="py-8">
-      <div className="max-w-[1140px] mx-auto">
-        <h2 className="font-catamaran text-[2.5rem] md:text-[4.5rem] font-extrabold text-rich-black-fogra-29-1 leading-[1.2] mb-6">
-          Settings
-        </h2>
-        <div className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300">
-          <div className="p-6 bg-gainsboro rounded-b-[10px]">
-            <p className="font-rubik text-[1.4rem] text-sonic-silver">
-              Settings panel coming soon...
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 };
 

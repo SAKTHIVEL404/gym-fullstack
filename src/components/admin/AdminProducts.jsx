@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { productsAPI, categoriesAPI } from '../../services/api';
-import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {
+  Container,
+  Row,
+  Col,
+  Table,
+  Button,
+  Modal,
+  Form,
+  InputGroup,
+} from 'react-bootstrap';
+import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -32,14 +42,9 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const params = {
-        search: searchTerm,
-        category: selectedCategory
-      };
-      const response = await productsAPI.getAll(params);
-      const apiResp = response.data;
-      setProducts(apiResp.data || []);
-    } catch (error) {
+      const response = await productsAPI.getAll({ search: searchTerm, category: selectedCategory });
+      setProducts(response.data.data || []);
+    } catch {
       toast.error('Failed to fetch products');
     } finally {
       setLoading(false);
@@ -49,17 +54,14 @@ const AdminProducts = () => {
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      const apiResp = response.data;
-      setCategories(apiResp.data || []);
-    } catch (error) {
-      console.error('Failed to fetch categories');
+      setCategories(response.data.data || []);
+    } catch {
+      toast.error('Failed to fetch categories');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Prepare payload converting empty strings to null and numbers correctly
     const payload = {
       name: formData.name.trim(),
       description: formData.description.trim() || null,
@@ -80,29 +82,24 @@ const AdminProducts = () => {
     try {
       if (editingProduct) {
         await productsAPI.update(editingProduct.id, payload);
-        toast.success('Product updated successfully');
+        toast.success('Product updated');
       } else {
         await productsAPI.create(payload);
-        toast.success('Product created successfully');
+        toast.success('Product created');
       }
-      
       setShowModal(false);
       setEditingProduct(null);
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        categoryId: '',
-        imageUrl: '',
-        stock: '',
-        brand: '',
-        material: '',
-        warranty: ''
-      });
+      resetForm();
       fetchProducts();
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to save product');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save');
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '', description: '', price: '', categoryId: '', imageUrl: '', stock: '', brand: '', material: '', warranty: ''
+    });
   };
 
   const handleEdit = (product) => {
@@ -125,19 +122,16 @@ const AdminProducts = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await productsAPI.delete(id);
-        toast.success('Product deleted successfully');
+        toast.success('Deleted');
         fetchProducts();
-      } catch (error) {
-        toast.error('Failed to delete product');
+      } catch {
+        toast.error('Failed to delete');
       }
     }
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleCategorySubmit = async (e) => {
@@ -149,346 +143,162 @@ const AdminProducts = () => {
       setShowCategoryModal(false);
       fetchCategories();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed');
+      toast.error(err.response?.data?.error || 'Failed to create category');
     }
   };
 
   const handleCategoryChange = (e) => {
-    setCategoryForm({
-      ...categoryForm,
-      [e.target.name]: e.target.value
-    });
+    setCategoryForm({ ...categoryForm, [e.target.name]: e.target.value });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-coquelicot"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center p-5">Loading...</div>;
 
   return (
-    <section className="py-[80px] px-4 bg-white font-rubik text-[1.6rem] text-sonic-silver leading-[1.6]">
-      <div className="max-w-[1140px] mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-[30px]">
-          <h2 className="font-catamaran text-[2.5rem] md:text-[4.5rem] font-extrabold text-rich-black-fogra-29-1 leading-[1.2]">
-            Products Management
-          </h2>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-coquelicot text-white px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] flex items-center gap-2 hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-          >
-            <Plus size={18} />
-            Add Product
-          </button>
-        </div>
+    <Container className="py-5">
+      <Row className="mb-4 align-items-center">
+        <Col><h2>Products Management</h2></Col>
+        <Col className="text-end">
+          <Button variant="danger" onClick={() => setShowModal(true)}><Plus size={18} /> Add Product</Button>
+        </Col>
+      </Row>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-5 mb-[30px] p-5 bg-gainsboro rounded-[10px] border border-coquelicot-20">
-          <div className="flex items-center gap-3 flex-1">
-            <Search size={20} className="text-coquelicot" />
-            <input
-              type="text"
+      <Row className="mb-4">
+        <Col md={6}>
+          <InputGroup>
+            <InputGroup.Text><Search size={18} /></InputGroup.Text>
+            <Form.Control
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver w-full focus:outline-none focus:border-coquelicot"
             />
-          </div>
-          <div className="flex items-center gap-3">
-            <Filter size={20} className="text-coquelicot" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver min-w-[150px] focus:outline-none focus:border-coquelicot"
-            >
+          </InputGroup>
+        </Col>
+        <Col md={4}>
+          <InputGroup>
+            <InputGroup.Text><Filter size={18} /></InputGroup.Text>
+            <Form.Select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
               <option value="">All Categories</option>
-              {(Array.isArray(categories) ? categories : []).map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Form.Select>
+          </InputGroup>
+        </Col>
+      </Row>
 
-        {/* Products Table */}
-        <div className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300">
-          <div className="p-6 bg-gainsboro rounded-b-[10px]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-[1.4rem] border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-light-gray">
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Image</th>
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Name</th>
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Category</th>
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Price</th>
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Stock</th>
-                    <th className="p-4 text-left font-catamaran font-bold text-rich-black-fogra-29-1">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(Array.isArray(products) ? products : []).map((product) => (
-                    <tr key={product.id} className="border-b border-light-gray hover:bg-coquelicot-10">
-                      <td className="p-4">
-                        <img
-                          src={product.imageUrl || 'https://images.pexels.com/photos/4164762/pexels-photo-4164762.jpeg?auto=compress&cs=tinysrgb&w=100'}
-                          alt={product.name}
-                          className="w-[50px] h-[50px] object-cover rounded-[5px]"
-                        />
-                      </td>
-                      <td className="p-4 font-catamaran font-medium text-rich-black-fogra-29-1">
-                        {product.name}
-                      </td>
-                      <td className="p-4 font-rubik text-[1.3rem] text-sonic-silver">
-                        {product.category?.name || 'Uncategorized'}
-                      </td>
-                      <td className="p-4 font-catamaran font-medium text-coquelicot">
-                        ₹{product.price}
-                      </td>
-                      <td className="p-4 font-rubik text-[1.3rem] text-sonic-silver">
-                        {product.stock || 'N/A'}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="bg-coquelicot text-white p-2 rounded-[5px] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className="bg-[#dc3545] text-white p-2 rounded-[5px] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <Table striped bordered hover responsive>
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map(p => (
+            <tr key={p.id}>
+              <td><img src={p.imageUrl || 'https://via.placeholder.com/50'} alt={p.name} width={50} /></td>
+              <td>{p.name}</td>
+              <td>{p.category?.name || 'Uncategorized'}</td>
+              <td>₹{p.price}</td>
+              <td>{p.stock || 'N/A'}</td>
+              <td>
+                <Button size="sm" variant="warning" onClick={() => handleEdit(p)}><Edit size={16} /></Button>{' '}
+                <Button size="sm" variant="danger" onClick={() => handleDelete(p.id)}><Trash2 size={16} /></Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+
+      {/* Product Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>{editingProduct ? 'Edit Product' : 'Add Product'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control name="name" value={formData.name} onChange={handleChange} required />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Category</Form.Label>
+              <Form.Select name="categoryId" value={formData.categoryId} onChange={handleChange} required>
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Form.Select>
+              <Button variant="link" size="sm" onClick={() => setShowCategoryModal(true)}>
+                + Add Category
+              </Button>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Price</Form.Label>
+              <Form.Control name="price" type="number" value={formData.price} onChange={handleChange} required />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Stock</Form.Label>
+              <Form.Control name="stock" type="number" value={formData.stock} onChange={handleChange} />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Brand</Form.Label>
+              <Form.Control name="brand" value={formData.brand} onChange={handleChange} />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Material</Form.Label>
+              <Form.Control name="material" value={formData.material} onChange={handleChange} />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Warranty</Form.Label>
+              <Form.Control name="warranty" value={formData.warranty} onChange={handleChange} />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} required />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Image URL</Form.Label>
+              <Form.Control name="imageUrl" value={formData.imageUrl} onChange={handleChange} />
+            </Form.Group>
+
+            <div className="d-flex gap-2">
+              <Button type="submit" variant="danger">{editingProduct ? 'Update' : 'Create'}</Button>
+              <Button variant="secondary" onClick={() => { setShowModal(false); setEditingProduct(null); resetForm(); }}>Cancel</Button>
             </div>
-          </div>
-        </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
 
-        {/* Product Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-            <div className="bg-white p-8 rounded-[10px] w-[90%] max-w-[600px] max-h-[90vh] overflow-y-auto border border-coquelicot-20">
-              <h3 className="font-catamaran text-[2rem] font-bold text-rich-black-fogra-29-1 mb-6">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h3>
-
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Product Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Category</label>
-                    <select
-                      name="categoryId"
-                      value={formData.categoryId}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      {(Array.isArray(categories) ? categories : []).map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="mt-2 w-full bg-white border border-coquelicot text-coquelicot px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] hover:bg-coquelicot hover:text-white transition-all duration-300"
-                      onClick={() => setShowCategoryModal(true)}
-                    >
-                      + Add Category
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Price (₹)</label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      required
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Stock</label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Brand</label>
-                    <input
-                      type="text"
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Warranty</label>
-                    <input
-                      type="text"
-                      name="warranty"
-                      value={formData.warranty}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      placeholder="e.g., 1 Year"
-                    />
-                  </div>
-
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      rows="4"
-                      required
-                    />
-                  </div>
-
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Image URL</label>
-                    <input
-                      type="url"
-                      name="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Material</label>
-                    <input
-                      type="text"
-                      name="material"
-                      value={formData.material}
-                      onChange={handleChange}
-                      className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                      placeholder="e.g., Steel, Plastic, Cotton"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4 mt-8">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-coquelicot text-white px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                  >
-                    {editingProduct ? 'Update Product' : 'Create Product'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      setEditingProduct(null);
-                      setFormData({
-                        name: '',
-                        description: '',
-                        price: '',
-                        categoryId: '',
-                        imageUrl: '',
-                        stock: '',
-                        brand: '',
-                        material: '',
-                        warranty: ''
-                      });
-                    }}
-                    className="flex-1 bg-white border border-coquelicot text-coquelicot px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] hover:bg-coquelicot hover:text-white transition-all duration-300"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+      {/* Category Modal */}
+      <Modal show={showCategoryModal} onHide={() => setShowCategoryModal(false)}>
+        <Modal.Header closeButton><Modal.Title>Add Category</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleCategorySubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control name="name" value={categoryForm.name} onChange={handleCategoryChange} required />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control as="textarea" rows={2} name="description" value={categoryForm.description} onChange={handleCategoryChange} />
+            </Form.Group>
+            <div className="d-flex gap-2">
+              <Button type="submit" variant="danger">Save</Button>
+              <Button variant="secondary" onClick={() => setShowCategoryModal(false)}>Cancel</Button>
             </div>
-          </div>
-        )}
-
-        {/* Category Modal */}
-        {showCategoryModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]">
-            <div className="bg-white p-6 rounded-[10px] w-[90%] max-w-[400px] border border-coquelicot-20">
-              <h3 className="font-catamaran text-[2rem] font-bold text-rich-black-fogra-29-1 mb-6">Add Category</h3>
-              <form onSubmit={handleCategorySubmit}>
-                <div className="mb-4">
-                  <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Name</label>
-                  <input
-                    name="name"
-                    value={categoryForm.name}
-                    onChange={handleCategoryChange}
-                    className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block font-catamaran font-medium text-rich-black-fogra-29-1 mb-2">Description</label>
-                  <textarea
-                    name="description"
-                    value={categoryForm.description}
-                    onChange={handleCategoryChange}
-                    className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] text-sonic-silver focus:outline-none focus:border-coquelicot"
-                    rows="3"
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-coquelicot text-white px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 bg-white border border-coquelicot text-coquelicot px-4 py-2 rounded-[8px] font-rubik text-[1.4rem] hover:bg-coquelicot hover:text-white transition-all duration-300"
-                    onClick={() => setShowCategoryModal(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
+          </Form>
+        </Modal.Body>
+      </Modal>
+    </Container>
   );
 };
 

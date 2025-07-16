@@ -1,9 +1,17 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, User, Mail, Phone, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {
+  Container,
+  Row,
+  Col,
+  Form,
+  Button,
+  Card,
+  Spinner
+} from 'react-bootstrap';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -28,168 +36,183 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
 
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+
     setLoading(true);
 
-    const result = await register({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      password: formData.password
-    });
+    try {
+      const result = await register({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
+      });
 
-    if (result.success) {
-      navigate('/login');
+      if (result.success) {
+        toast.success('Registration successful! Please log in.');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="pt-[100px] min-h-screen bg-gradient-to-br from-rich-black-fogra-29-1 to-coquelicot flex items-center justify-center px-4">
-      <div className="max-w-[500px] w-full">
-        <div className="bg-white p-10 rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] animate-fade-in">
-          <div className="text-center mb-8">
-            <h1 className="font-catamaran text-[3rem] font-extrabold text-rich-black-fogra-29-1 mb-2">
-              Join Phoenix Fitness
-            </h1>
-            <p className="font-rubik text-[1.4rem] text-sonic-silver">
-              Create your account and start your fitness journey today
-            </p>
-          </div>
+    <div className="bg-light py-5 d-flex align-items-center" style={{ minHeight: '100vh' }}>
+      <Container>
+        <Row className="justify-content-center">
+          <Col md={6}>
+            <Card className="p-4 shadow-sm">
+              <Card.Body>
+                <div className="text-center mb-4">
+                  <h2 className="fw-bold">Join Phoenix Fitness</h2>
+                  <p className="text-muted">Create your account and start your fitness journey today</p>
+                </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <label className="flex items-center gap-2 font-rubik text-[1.4rem] text-rich-black-fogra-29-1 mb-2">
-                <User size={18} className="text-coquelicot" />
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] focus:outline-none focus:border-coquelicot"
-                required
-                placeholder="Enter your full name"
-              />
-            </div>
+                <Form onSubmit={handleSubmit}>
+                  {/* Name */}
+                  <Form.Group className="mb-3" controlId="formName">
+                    <Form.Label>
+                      <User size={16} className="me-2 text-danger" />
+                      Full Name
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="name"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </Form.Group>
 
-            <div className="mb-6">
-              <label className="flex items-center gap-2 font-rubik text-[1.4rem] text-rich-black-fogra-29-1 mb-2">
-                <Mail size={18} className="text-coquelicot" />
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] focus:outline-none focus:border-coquelicot"
-                required
-                placeholder="Enter your email"
-              />
-            </div>
+                  {/* Email */}
+                  <Form.Group className="mb-3" controlId="formEmail">
+                    <Form.Label>
+                      <Mail size={16} className="me-2 text-danger" />
+                      Email Address
+                    </Form.Label>
+                    <Form.Control
+                      type="email"
+                      name="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </Form.Group>
 
-            <div className="mb-6">
-              <label className="flex items-center gap-2 font-rubik text-[1.4rem] text-rich-black-fogra-29-1 mb-2">
-                <Phone size={18} className="text-coquelicot" />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] focus:outline-none focus:border-coquelicot"
-                required
-                placeholder="Enter your phone number"
-              />
-            </div>
+                  {/* Phone */}
+                  <Form.Group className="mb-3" controlId="formPhone">
+                    <Form.Label>
+                      <Phone size={16} className="me-2 text-danger" />
+                      Phone Number
+                    </Form.Label>
+                    <Form.Control
+                      type="tel"
+                      name="phone"
+                      placeholder="Enter your phone number"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                    />
+                  </Form.Group>
 
-            <div className="mb-6">
-              <label className="flex items-center gap-2 font-rubik text-[1.4rem] text-rich-black-fogra-29-1 mb-2">
-                <Lock size={18} className="text-coquelicot" />
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] focus:outline-none focus:border-coquelicot pr-12"
-                  required
-                  placeholder="Create a password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sonic-silver hover:text-coquelicot bg-transparent border-none cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+                  {/* Password */}
+                  <Form.Group className="mb-3" controlId="formPassword">
+                    <Form.Label>
+                      <Lock size={16} className="me-2 text-danger" />
+                      Password
+                    </Form.Label>
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        placeholder="Create a password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                      />
+                      <Button
+                        variant="link"
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="position-absolute top-50 end-0 translate-middle-y pe-3"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </Button>
+                    </div>
+                  </Form.Group>
 
-            <div className="mb-6">
-              <label className="flex items-center gap-2 font-rubik text-[1.4rem] text-rich-black-fogra-29-1 mb-2">
-                <Lock size={18} className="text-coquelicot" />
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 font-rubik text-[1.4rem] focus:outline-none focus:border-coquelicot pr-12"
-                  required
-                  placeholder="Confirm your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sonic-silver hover:text-coquelicot bg-transparent border-none cursor-pointer"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+                  {/* Confirm Password */}
+                  <Form.Group className="mb-4" controlId="formConfirmPassword">
+                    <Form.Label>
+                      <Lock size={16} className="me-2 text-danger" />
+                      Confirm Password
+                    </Form.Label>
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                      />
+                      <Button
+                        variant="link"
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="position-absolute top-50 end-0 translate-middle-y pe-3"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </Button>
+                    </div>
+                  </Form.Group>
 
-            <button 
-              type="submit" 
-              className="w-full bg-coquelicot text-white px-6 py-3 rounded-[8px] font-rubik text-[1.4rem] hover:bg-rich-black-fogra-29-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
+                  {/* Submit */}
+                  <Button
+                    variant="danger"
+                    type="submit"
+                    className="w-100 d-flex align-items-center justify-content-center"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </Button>
+                </Form>
 
-            <div className="text-center mt-5">
-              <p className="font-rubik text-[1.4rem] text-sonic-silver">
-                Already have an account?{' '}
-                <Link 
-                  to="/login" 
-                  className="text-coquelicot font-medium hover:underline"
-                >
-                  Sign In
-                </Link>
-              </p>
-            </div>
-          </form>
-        </div>
-      </div>
+                <div className="text-center mt-4">
+                  <p className="text-muted">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-danger fw-semibold">
+                      Sign In
+                    </Link>
+                  </p>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     </div>
   );
 };

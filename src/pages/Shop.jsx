@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Form, InputGroup, Spinner, Offcanvas, Badge } from 'react-bootstrap';
 import { productsAPI, categoriesAPI } from '../services/api';
 import { ShoppingBag, Filter, Search, Star, X, Minus, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ const Shop = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchProducts();
-    }, 500); // Debounce API calls
+    }, 500);
     fetchCategories();
     return () => clearTimeout(timer);
   }, [selectedCategory, searchTerm, sortBy, priceRange]);
@@ -37,18 +37,14 @@ const Shop = () => {
       };
       const response = await productsAPI.getAll(params);
       const data = response.data;
-      console.log('Products API Response:', data); // Debug
-      if (Array.isArray(data)) {
-        setProducts(data);
-      } else if (data && Array.isArray(data.data)) {
-        setProducts(data.data);
-      } else {
+      if (Array.isArray(data)) setProducts(data);
+      else if (data && Array.isArray(data.data)) setProducts(data.data);
+      else {
         setProducts([]);
         toast.error('Invalid product data received');
       }
     } catch (error) {
-      console.error('Failed to fetch products:', error);
-      setProducts([]);
+      console.error(error);
       toast.error('Failed to fetch products');
     } finally {
       setLoading(false);
@@ -59,387 +55,171 @@ const Shop = () => {
     try {
       const response = await categoriesAPI.getAll();
       const data = response.data;
-      console.log('Categories API Response:', data); // Debug
-      if (Array.isArray(data)) {
-        setCategories(data);
-      } else if (data && Array.isArray(data.items)) {
-        setCategories(data.items);
-      } else {
-        setCategories([]);
-        console.warn('Categories data is not an array, setting to empty array');
-      }
+      if (Array.isArray(data)) setCategories(data);
+      else if (data && Array.isArray(data.items)) setCategories(data.items);
+      else setCategories([]);
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      setCategories([]);
+      console.error(error);
       toast.error('Failed to fetch categories');
     }
   };
 
   const handleAddToCart = (product) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing)
+        return prev.map((item) =>
           item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
         );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1 }];
     });
     toast.success(`${product.name} added to cart!`);
   };
 
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-    toast.success('Item removed from cart');
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+    toast.success('Item removed');
   };
 
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
+  const updateQuantity = (id, qty) => {
+    if (qty < 1) return removeFromCart(id);
+    setCart((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
     );
   };
 
-  const getTotalItems = () => {
-    return cart.reduce((total, item) => total + (item.quantity || 1), 0);
-  };
-
-  const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + item.price * (item.quantity || 1), 0);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-coquelicot"></div>
-      </div>
-    );
-  }
+  const totalItems = cart.reduce((t, i) => t + (i.quantity || 1), 0);
+  const totalPrice = cart.reduce((t, i) => t + i.price * (i.quantity || 1), 0);
 
   return (
-    <div className="pt-[100px] min-h-screen bg-white font-rubik text-[1.4rem] text-sonic-silver relative">
-      {/* Cart Button */}
-      <button
+    <Container className="py-5 mt-5">
+      <Button
+        variant="danger"
+        className="position-fixed top-0 end-0 m-4"
         onClick={() => setIsCartOpen(true)}
-        className="fixed right-6 top-24 bg-coquelicot text-white p-3 rounded-full shadow-lg z-30 flex items-center justify-center hover:bg-rich-black-fogra-29-1 transition-all duration-300"
       >
-        <ShoppingBag size={24} />
-        {cart.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-white text-coquelicot w-6 h-6 rounded-full flex items-center justify-center text-[1.1rem] font-bold">
-            {getTotalItems()}
-          </span>
-        )}
-      </button>
+        <ShoppingBag /> {totalItems > 0 && <Badge bg="light" text="dark">{totalItems}</Badge>}
+      </Button>
 
-      {/* Cart Sidebar */}
-      <div
-        className={`fixed top-0 right-0 h-full w-full md:w-[400px] bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] transform transition-transform duration-300 z-50 ${
-          isCartOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="font-catamaran text-[2rem] font-bold text-rich-black-fogra-29-1">
-              Your Cart ({getTotalItems()})
-            </h2>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="text-sonic-silver hover:text-coquelicot transition-colors duration-300"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto mb-6">
-            {cart.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingBag size={48} className="mx-auto mb-4 text-gray-300" />
-                <p className="text-[1.4rem] text-sonic-silver">Your cart is empty</p>
-                <Link
-                  to="/shop"
-                  className="mt-4 inline-block bg-coquelicot text-white px-6 py-2 rounded-[8px] text-[1.3rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-                >
-                  Continue Shopping
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 border-b border-light-gray">
-                    <img
-                      src={
-                        item.imageUrl ||
-                        'https://images.pexels.com/photos/4164762/pexels-photo-4164762.jpeg?auto=compress&cs=tinysrgb&w=800'
-                      }
-                      alt={item.name}
-                      className="w-20 h-20 object-cover rounded-[6px]"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-catamaran text-[1.4rem] font-medium text-rich-black-fogra-29-1">
-                        {item.name}
-                      </h3>
-                      <p className="font-catamaran text-[1.4rem] font-bold text-coquelicot">
-                        ₹{(item.price * (item.quantity || 1)).toFixed(2)}
-                      </p>
-                      <div className="flex items-center mt-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
-                          className="p-1 text-sonic-silver hover:text-coquelicot transition-colors duration-300"
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className="mx-3 w-8 text-center text-[1.3rem]">{item.quantity || 1}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
-                          className="p-1 text-sonic-silver hover:text-coquelicot transition-colors duration-300"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-sonic-silver hover:text-red-500 transition-colors duration-300"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+      <Offcanvas show={isCartOpen} onHide={() => setIsCartOpen(false)} placement="end">
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>Your Cart ({totalItems})</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          {cart.length === 0 ? (
+            <p>Your cart is empty.</p>
+          ) : (
+            cart.map((item) => (
+              <Card key={item.id} className="mb-3">
+                <Card.Body>
+                  <Row>
+                    <Col xs={4}>
+                      <Card.Img src={item.imageUrl || 'https://via.placeholder.com/100'} />
+                    </Col>
+                    <Col>
+                      <Card.Title>{item.name}</Card.Title>
+                      <Card.Text>₹{item.price * item.quantity}</Card.Text>
+                      <InputGroup className="mb-2">
+                        <Button variant="outline-secondary" onClick={() => updateQuantity(item.id, item.quantity - 1)}><Minus size={16} /></Button>
+                        <Form.Control readOnly value={item.quantity} />
+                        <Button variant="outline-secondary" onClick={() => updateQuantity(item.id, item.quantity + 1)}><Plus size={16} /></Button>
+                      </InputGroup>
+                      <Button variant="danger" size="sm" onClick={() => removeFromCart(item.id)}>
+                        <Trash2 size={16} /> Remove
+                      </Button>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            ))
+          )}
           {cart.length > 0 && (
-            <div className="border-t border-light-gray pt-4">
-              <div className="flex justify-between mb-4 text-[1.4rem]">
-                <span className="font-medium">Total:</span>
-                <span className="font-catamaran font-bold text-coquelicot">₹{getTotalPrice().toFixed(2)}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setIsCartOpen(false);
-                  navigate('/checkout');
-                }}
-                className="w-full bg-coquelicot text-white py-3 rounded-[8px] text-[1.4rem] font-rubik hover:bg-rich-black-fogra-29-1 transition-all duration-300"
-              >
-                Proceed to Checkout
-              </button>
+            <div className="mt-4">
+              <h5>Total: ₹{totalPrice.toFixed(2)}</h5>
+              <Button variant="success" onClick={() => navigate('/checkout')}>Checkout</Button>
             </div>
           )}
-        </div>
-      </div>
+        </Offcanvas.Body>
+      </Offcanvas>
 
-      {/* Overlay when cart is open */}
-      {isCartOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setIsCartOpen(false)}
-        />
-      )}
+      <h2 className="text-center mb-4">Shop Products</h2>
 
-      <div className="max-w-[1140px] mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <p className="text-coquelicot font-catamaran text-[1.6rem] font-bold">Fitness Shop</p>
-          <h1 className="font-catamaran text-[2.5rem] md:text-[4rem] font-extrabold text-rich-black-fogra-29-1 mb-3">
-            Premium Fitness Products & Apparel
-          </h1>
-          <p className="text-[1.4rem] text-sonic-silver max-w-[700px] mx-auto">
-            Discover our collection of high-quality fitness equipment, supplements, and athletic wear
-            to support your fitness journey.
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-gainsboro rounded-[10px] p-5 mb-8 flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 flex-1 min-w-[250px]">
-            <Search size={20} className="text-coquelicot" />
-            <input
-              type="text"
-              placeholder="Search products..."
+      <Row className="mb-4">
+        <Col md>
+          <InputGroup>
+            <InputGroup.Text><Search size={16} /></InputGroup.Text>
+            <Form.Control
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-light-gray rounded-[6px] text-[1.3rem] focus:outline-none focus:border-coquelicot transition-colors duration-300"
             />
-          </div>
-          <div className="flex items-center gap-2 min-w-[180px]">
-            <Filter size={20} className="text-coquelicot" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-light-gray rounded-[6px] text-[1.3rem] focus:outline-none focus:border-coquelicot transition-colors duration-300"
-            >
-              <option value="">All Categories</option>
-              {Array.isArray(categories) && categories.length > 0 ? (
-                categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))
-              ) : (
-                <option disabled>No categories available</option>
-              )}
-            </select>
-          </div>
-          <div className="min-w-[150px]">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full px-4 py-2 border border-light-gray rounded-[6px] text-[1.3rem] focus:outline-none focus:border-coquelicot transition-colors duration-300"
-            >
-              <option value="name">Sort by Name</option>
-              <option value="price">Sort by Price</option>
-              <option value="rating">Sort by Rating</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2 min-w-[200px]">
-            <span className="text-[1.3rem] font-medium">Price Range:</span>
-            <input
+          </InputGroup>
+        </Col>
+        <Col md>
+          <Form.Select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+            <option value="">All Categories</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Form.Select>
+        </Col>
+        <Col md>
+          <Form.Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="name">Sort by Name</option>
+            <option value="price">Sort by Price</option>
+            <option value="rating">Sort by Rating</option>
+          </Form.Select>
+        </Col>
+        <Col md>
+          <InputGroup>
+            <Form.Control
               type="number"
-              value={priceRange[0]}
-              onChange={(e) => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
               placeholder="Min"
-              className="w-20 px-2 py-2 border border-light-gray rounded-[6px] text-[1.3rem] focus:outline-none focus:border-coquelicot"
+              value={priceRange[0]}
+              onChange={(e) => setPriceRange([+e.target.value, priceRange[1]])}
             />
-            <span>-</span>
-            <input
+            <Form.Control
               type="number"
-              value={priceRange[1]}
-              onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value) || 10000])}
               placeholder="Max"
-              className="w-20 px-2 py-2 border border-light-gray rounded-[6px] text-[1.3rem] focus:outline-none focus:border-coquelicot"
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([priceRange[0], +e.target.value])}
             />
-          </div>
-        </div>
+          </InputGroup>
+        </Col>
+      </Row>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {Array.isArray(products) && products.length > 0 ? (
-            products.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300 animate-slide-in-up"
-              >
-                <div className="relative">
-                  <img
-                    src={
-                      product.imageUrl ||
-                      'https://images.pexels.com/photos/4164762/pexels-photo-4164762.jpeg?auto=compress&cs=tinysrgb&w=600'
-                    }
-                    alt={product.name}
-                    className="w-full h-[200px] object-cover rounded-t-[10px]"
-                  />
-                  {product.discount && (
-                    <span className="absolute top-3 right-3 bg-coquelicot text-white px-2 py-1 rounded-[6px] text-[1.1rem] font-medium">
-                      -{product.discount}%
-                    </span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-catamaran text-[1.6rem] font-bold text-rich-black-fogra-29-1 mb-2">
-                    <Link to={`/product/${product.id}`} className="hover:text-coquelicot transition-colors duration-300">
-                      {product.name}
-                    </Link>
-                  </h3>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={14}
-                        fill={i < (product.rating || 4) ? '#FF5733' : 'transparent'}
-                        stroke="#FF5733"
-                      />
-                    ))}
-                    <span className="text-[1.2rem] text-sonic-silver ml-2">
-                      ({product.reviewCount || 12} reviews)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="font-catamaran text-[1.6rem] font-extrabold text-coquelicot">
-                      ₹{product.price}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-[1.3rem] text-sonic-silver line-through">
-                        ₹{product.originalPrice}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="flex-1 bg-coquelicot text-white px-4 py-2 rounded-[8px] text-[1.3rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <ShoppingBag size={16} />
-                      Add to Cart
-                    </button>
-                    <Link
-                      to={`/product/${product.id}`}
-                      className="flex-1 bg-transparent border border-coquelicot text-coquelicot px-4 py-2 rounded-[8px] text-[1.3rem] hover:bg-coquelicot hover:text-white transition-all duration-300 text-center"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-16">
-              <ShoppingBag size={64} className="text-coquelicot mx-auto mb-4" />
-              <h3 className="font-catamaran text-[2rem] font-bold text-rich-black-fogra-29-1 mb-2">
-                No Products Found
-              </h3>
-              <p className="text-[1.4rem] text-sonic-silver">
-                Try adjusting your search criteria or browse all categories.
-              </p>
-            </div>
+      {loading ? (
+        <div className="text-center"><Spinner animation="border" /></div>
+      ) : (
+        <Row>
+          {products.length ? products.map((product) => (
+            <Col key={product.id} md={4} className="mb-4">
+              <Card>
+                <Card.Img variant="top" src={product.imageUrl || 'https://via.placeholder.com/300'} />
+                <Card.Body>
+                  <Card.Title>{product.name}</Card.Title>
+                  <Card.Text>
+                    ₹{product.price} {product.originalPrice && <del>₹{product.originalPrice}</del>}
+                    <div>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={14}
+                          fill={i < (product.rating || 4) ? '#FF5733' : 'transparent'}
+                          stroke="#FF5733"
+                        />
+                      ))}
+                    </div>
+                  </Card.Text>
+                  <Button variant="danger" onClick={() => handleAddToCart(product)}>Add to Cart</Button>{' '}
+                  <Link to={`/product/${product.id}`} className="btn btn-outline-secondary">View</Link>
+                </Card.Body>
+              </Card>
+            </Col>
+          )) : (
+            <Col><p>No products found.</p></Col>
           )}
-        </div>
-
-        {/* Categories Section */}
-        <div className="mb-12">
-          <h2 className="font-catamaran text-[2.5rem] font-extrabold text-rich-black-fogra-29-1 text-center mb-6">
-            Shop by Category
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.isArray(categories) && categories.length > 0 ? (
-              categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="bg-white rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300 cursor-pointer animate-slide-in-up"
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  <img
-                    src={
-                      category.imageUrl ||
-                      'https://images.pexels.com/photos/4164762/pexels-photo-4164762.jpeg?auto=compress&cs=tinysrgb&w=600'
-                    }
-                    alt={category.name}
-                    className="w-full h-[150px] object-cover rounded-t-[10px]"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-catamaran text-[1.6rem] font-bold text-rich-black-fogra-29-1 mb-2">
-                      {category.name}
-                    </h3>
-                    <p className="text-[1.3rem] text-sonic-silver line-clamp-2">
-                      {category.description || 'Explore our range of products in this category.'}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-[1.4rem] text-sonic-silver">
-                No categories available
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+        </Row>
+      )}
+    </Container>
   );
 };
 

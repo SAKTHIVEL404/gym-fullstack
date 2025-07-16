@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import {
+  Container,
+  Row,
+  Col,
+  Form,
+  Button,
+  Card,
+  Spinner
+} from 'react-bootstrap';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -32,98 +41,98 @@ const Login = () => {
   };
 
   return (
-    <div className="pt-[100px] min-h-screen bg-gradient-to-br from-rich-black-fogra-29-1 to-coquelicot flex items-center justify-center font-rubik text-[1.6rem] text-sonic-silver">
-      <div className="max-w-[500px] w-full px-4">
-        <div className="bg-white p-10 rounded-[10px] border border-coquelicot-20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_hsla(12,98%,52%,0.2)] transition-all duration-300">
-          <div className="text-center mb-8">
-            <h1 className="font-catamaran text-[3rem] font-extrabold text-rich-black-fogra-29-1 mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-[1.4rem] text-sonic-silver">
-              Sign in to your Phoenix Fitness Studio account
-            </p>
-          </div>
+    <div className="bg-light py-5 d-flex align-items-center" style={{ minHeight: '100vh' }}>
+      <Container>
+        <Row className="justify-content-center">
+          <Col md={6} lg={5}>
+            <Card className="p-4 shadow">
+              <Card.Body>
+                <div className="text-center mb-4">
+                  <h2 className="fw-bold">Welcome Back</h2>
+                  <p className="text-muted">Sign in to your Phoenix Fitness Studio account</p>
+                </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <label className="flex items-center gap-2 text-[1.3rem] text-sonic-silver mb-2">
-                <Mail size={18} className="text-coquelicot" />
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 text-[1.4rem] focus:outline-none focus:border-coquelicot"
-                required
-                placeholder="Enter your email"
-              />
-            </div>
+                <Form onSubmit={handleSubmit}>
+                  <Form.Group controlId="formEmail" className="mb-3">
+                    <Form.Label>
+                      <Mail size={16} className="me-2 text-danger" />
+                      Email Address
+                    </Form.Label>
+                    <Form.Control
+                      type="email"
+                      name="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </Form.Group>
 
-            <div className="mb-6">
-              <label className="flex items-center gap-2 text-[1.3rem] text-sonic-silver mb-2">
-                <Lock size={18} className="text-coquelicot" />
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-white border border-coquelicot-20 rounded-[8px] px-4 py-2 text-[1.4rem] focus:outline-none focus:border-coquelicot pr-12"
-                  required
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sonic-silver hover:text-coquelicot"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+                  <Form.Group controlId="formPassword" className="mb-3">
+                    <Form.Label>
+                      <Lock size={16} className="me-2 text-danger" />
+                      Password
+                    </Form.Label>
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        placeholder="Enter your password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                      />
+                      <Button
+                        variant="link"
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="position-absolute top-50 end-0 translate-middle-y pe-3"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </Button>
+                    </div>
+                  </Form.Group>
 
-            <button
-              type="submit"
-              className="w-full bg-coquelicot text-white px-6 py-3 rounded-[8px] font-rubik text-[1.4rem] hover:bg-rich-black-fogra-29-1 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-                  Signing In...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </button>
+                  <Button
+                    type="submit"
+                    variant="danger"
+                    className="w-100 d-flex align-items-center justify-content-center"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner
+                          animation="border"
+                          size="sm"
+                          className="me-2"
+                          role="status"
+                        />
+                        Signing In...
+                      </>
+                    ) : (
+                      'Sign In'
+                    )}
+                  </Button>
+                </Form>
 
-            <div className="text-center mt-6">
-              <p className="text-[1.3rem] text-sonic-silver">
-                Don't have an account?{' '}
-                <Link
-                  to="/register"
-                  className="text-coquelicot font-medium hover:underline"
-                >
-                  Create Account
-                </Link>
-              </p>
-            </div>
-
-            <div className="text-center mt-4">
-              <Link
-                to="/forgot-password"
-                className="text-[1.3rem] text-sonic-silver hover:text-coquelicot hover:underline"
-              >
-                Forgot Password?
-              </Link>
-            </div>
-          </form>
-        </div>
-      </div>
+                <div className="text-center mt-3">
+                  <p>
+                    Don't have an account?{' '}
+                    <Link to="/register" className="text-danger fw-semibold">
+                      Create Account
+                    </Link>
+                  </p>
+                  <p>
+                    <Link to="/forgot-password" className="text-muted small">
+                      Forgot Password?
+                    </Link>
+                  </p>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     </div>
   );
 };
