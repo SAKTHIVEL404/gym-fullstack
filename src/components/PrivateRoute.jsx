@@ -1,37 +1,11 @@
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
 
 const PrivateRoute = ({ children, requiredRole }) => {
-  const { user, isAuthenticated, loading, validateToken, refreshToken } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const isValid = await validateToken();
-        if (!isValid) {
-          if (!isAuthenticated || !user) {
-            console.log('Redirecting to /login due to unauthenticated or no user');
-            window.location.href = '/login';
-          } else if (requiredRole && user?.role !== requiredRole) {
-            console.log('Redirecting to / due to role mismatch:', user?.role, requiredRole);
-            window.location.href = '/';
-          }
-          return false;
-        }
-        return true;
-      } catch (error) {
-        console.error('Auth validation failed:', error);
-        return false;
-      }
-    };
-
-    checkAuth();
-  }, [user, isAuthenticated, requiredRole, validateToken, location]);
-
-  // Only show loading spinner for non-admin routes
-  if (loading && !window.location.pathname.startsWith('/admin')) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-coquelicot"></div>
@@ -39,7 +13,14 @@ const PrivateRoute = ({ children, requiredRole }) => {
     );
   }
 
-  // If we're here, auth is valid - return children immediately
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole && user.role !== `ROLE_${requiredRole}`) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 

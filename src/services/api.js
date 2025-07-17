@@ -13,6 +13,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('Attaching token to request:', token, config.url);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -117,7 +118,7 @@ export const authAPI = {
     }
   },
   refresh: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken }),
-  // Remove redundant refreshToken endpoint if not used by backend
+  getAllUsers: () => api.get('/users'),
 };
 
 // Products API

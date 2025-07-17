@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
@@ -25,23 +24,13 @@ export const AuthProvider = ({ children }) => {
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) {
         console.error('No refresh token available');
-        // Try to get a new refresh token from the server
-        const loginResponse = await authAPI.login({
-          email: localStorage.getItem('user_email'),
-          password: localStorage.getItem('user_password')
-        });
-        if (loginResponse.data.success) {
-          const { token, refreshToken: newRefreshToken, user } = loginResponse.data.data;
-          localStorage.setItem('token', token);
-          localStorage.setItem('refresh_token', newRefreshToken);
-          setUser(user);
-          setIsAuthenticated(true);
-          console.log('New token obtained:', token);
-          return token;
-        }
-        throw new Error('Failed to obtain new token');
+        setUser(null);
+        setIsAuthenticated(false);
+        toast.error('Session expired. Please log in again.');
+        navigate('/login');
+        return null;
       }
-      
+
       console.log('Attempting to refresh token with:', refreshToken);
       const response = await authAPI.refresh(refreshToken);
       if (response.data.success) {
@@ -59,7 +48,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_email');
-      localStorage.removeItem('user_password');
       setUser(null);
       setIsAuthenticated(false);
       toast.error('Session expired. Please log in again.');
@@ -84,27 +72,12 @@ export const AuthProvider = ({ children }) => {
           decoded = jwtDecode(token);
           console.log('Decoded token:', decoded);
           const currentTime = Date.now() / 1000;
-          
+
           // Only refresh token if it's about to expire (within 5 minutes)
           if (decoded.exp && decoded.exp - 300 < currentTime) { // 300 seconds = 5 minutes
             console.log('Token near expiration, attempting refresh');
             const newToken = await refreshToken();
             if (!newToken) {
-              // Try to get a new token by logging in
-              const email = localStorage.getItem('user_email');
-              const password = localStorage.getItem('user_password');
-              if (email && password) {
-                const loginResponse = await authAPI.login({
-                  email,
-                  password
-                });
-                if (loginResponse.data.success) {
-                  const { token, refreshToken } = loginResponse.data.data;
-                  localStorage.setItem('token', token);
-                  localStorage.setItem('refresh_token', refreshToken);
-                  return true;
-                }
-              }
               throw new Error('Token refresh failed');
             }
             token = newToken;
@@ -128,7 +101,7 @@ export const AuthProvider = ({ children }) => {
         console.log('Validation response:', response.data);
         setUser(response.data.data);
         setIsAuthenticated(true);
-        
+
         // Only redirect if we're on the login page
         if (window.location.pathname === '/login') {
           if (response.data.data.role === 'ADMIN' || response.data.data.role === 'ROLE_ADMIN') {
@@ -143,7 +116,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_email');
-        localStorage.removeItem('user_password');
         setUser(null);
         setIsAuthenticated(false);
         toast.error(error.message);
@@ -182,23 +154,22 @@ export const AuthProvider = ({ children }) => {
         if (response.data.success) {
           const { token, refreshToken, user } = response.data.data;
           if (!token) throw new Error('No token received from server');
-          
+
           // Store tokens and user info
           localStorage.setItem('token', token);
           if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
           localStorage.setItem('user_email', credentials.email);
-          localStorage.setItem('user_password', credentials.password);
-          
+
           // Update auth state
           setUser(user);
           setIsAuthenticated(true);
-          
+
           // Validate token immediately
           const isValid = await validateToken();
           if (!isValid) {
             throw new Error('Token validation failed after login');
           }
-          
+
           toast.success('Login successful!');
           navigate(user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/shop');
           return { success: true };
@@ -210,7 +181,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_email');
-        localStorage.removeItem('user_password');
         setUser(null);
         setIsAuthenticated(false);
         toast.error(error.response?.data?.message || 'Login failed');
@@ -234,22 +204,21 @@ export const AuthProvider = ({ children }) => {
       console.log('Sending registration request with data:', userData);
       const response = await authAPI.register(userData);
       console.log('Registration response:', response);
-      
+
       if (response.data.success) {
         return { 
           success: true,
           message: response.data.data || 'Registration successful! Please log in.'
         };
       }
-      
+
       throw new Error(response.data.error || 'Registration failed');
-      
     } catch (error) {
       console.error('Registration error:', error);
       const errorMessage = error.response?.data?.message || 
                          error.response?.data?.error || 
                          'Registration failed. Please check your details and try again.';
-      
+
       throw new Error(errorMessage);
     }
   }, []);
